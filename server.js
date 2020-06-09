@@ -15,7 +15,7 @@ mongoose.connect(DB="mongodb+srv://krishna:krishna123@gladiator-kris-t7sjb.mongo
   let db = mongoose.connection;
   db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
-var counter = 0;
+var counter = 1, counter2 = 1;
 
 scrapeItems();
 
@@ -47,6 +47,7 @@ function readPage(data){
         let booksReco = [];
 
         const elements = $('#page tr');
+        counter2++;
 
         elements.each(async (roll, page) => {
             
@@ -80,7 +81,7 @@ function readPage(data){
                 //console.log(booksReco);
             }
             if (roll == elements.length - 1) {
-                console.log(counter++, data.storyLink, booksReco);
+                console.log(counter++, counter2, data.storyLink, booksReco);
                 resolve(booksReco);
             }
         });
