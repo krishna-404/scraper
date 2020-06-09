@@ -1,7 +1,9 @@
+require('dotenv').config();
 const request = require('request');
 const cheerio = require('cheerio');
 const mongoose = require("mongoose");
 
+console.log(process.env.DB)
 // mongoose.connect(process.env.DB, {
 //     useNewUrlParser: true,
 //     useFindAndModify: false,
@@ -33,8 +35,8 @@ const mongoose = require("mongoose");
 //     })
 // }
 
-console.log('lets go')
-readPage()
+// console.log('lets go')
+// readPage()
 function readPage(URL = 'http://favobooks.com/writers/84-einstein-albert.html'){
     request(URL, async function(err, response, body){
             
