@@ -56,7 +56,7 @@ function readPage(data){
                                                     .children('a')
                                                     .children('img')
                                                     .attr('src');
-            if(bookImgPath){
+            if(bookImgPath){ //so that only the table with the books is read & not anyother table(tr)
                 bookdetail.bookImgPath = bookImgPath;
 
                 const detail = $(page).find('.opisanie')
