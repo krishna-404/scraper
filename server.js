@@ -2,7 +2,7 @@ const request = require('request');
 const cheerio = require('cheerio');
 const mongoose = require("mongoose");
 
-mongoose.connect(process.env.DB, {
+mongoose.connect("mongodb+srv://krishna:krishna123@gladiator-kris-t7sjb.mongodb.net/scraper?retryWrites=true&w=majority", {
     useNewUrlParser: true,
     useFindAndModify: false,
     useCreateIndex: true,
@@ -44,8 +44,9 @@ function readPage(URL){
         let $ = cheerio.load(body);
         let booksReco = [];
 
-        
-        await $('#page tr').each(async (roll, data) => {
+        const pageTr = $('#page tr');
+
+        pageTr.each(async (roll, data) => {
             
             let bookdetail = {};
             const bookImgPath = await $(data)  .find('.kniga')
@@ -72,15 +73,66 @@ function readPage(URL){
 
                 bookdetail.bookDesc = detail.children('.description').text();
 
-                console.log(bookdetail.bookName, bookdetail.bookAuthor);
+                //console.log(bookdetail.bookName, bookdetail.bookAuthor);
                 booksReco.push(bookdetail);
-                console.log(booksReco);
+                //console.log(booksReco);
             }
         });
-        console.log(booksReco);
-        return(booksReco);
         
     })
+}
+
+async function start(){
+    for(let i=0; i<=75; i+=15){
+        await scrapeHome('http://favobooks.com/index.php?start=' + i)
+    }
+}
+
+function scrapeHome(){
+
+    const LeaderModel = require("./leader_model");
+
+    
+
+    request(homeURL, function(err, response, body){
+        if (err) console.error(err);
+
+        let $ = cheerio.load(body);
+
+        $('.article_row').each(async function(i,e) {
+
+            for(let j=1; j<=3; j++) {
+                
+                const card = $(e).find('.column' + j)
+
+                let leader = {};
+                                        
+                leader.storyLink = "http://favobooks.com" + card.find('a')
+                                       .attr('href')
+                                        
+                leader.leaderSector = card  .find('a').attr('href')
+                                            .match(/^\/[a-z]+/i);
+                                        
+                leader.leaderSector = leader.leaderSector[0].replace("/", "");
+                
+                leader.imagepath = "http://favobooks.com" + card .find('img')
+                                        .attr('src');
+
+                leader.leaderName = card.find('b')
+                                        .text();
+
+                leader.leaderBio  = card.find('p')
+                                        .text();
+
+                LeaderModel.create(leader);
+
+                
+                
+                // console.log(leader);
+            }
+        })
+    })
+
 }
 
 
