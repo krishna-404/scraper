@@ -3,7 +3,7 @@ const request = require('request');
 const cheerio = require('cheerio');
 const mongoose = require("mongoose");
 
-console.log('env: ', process.env.DB);
+//console.log('env: ', process.env.DB);
 
 mongoose.connect(DB="mongodb+srv://krishna:krishna123@gladiator-kris-t7sjb.mongodb.net/scraper?retryWrites=true&w=majority", {
     useNewUrlParser: true,
@@ -15,8 +15,9 @@ mongoose.connect(DB="mongodb+srv://krishna:krishna123@gladiator-kris-t7sjb.mongo
   let db = mongoose.connection;
   db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
-  
-///scrapeItems();
+var counter = 0;
+
+scrapeItems();
 
 function scrapeItems(){
 
@@ -24,20 +25,20 @@ function scrapeItems(){
 
     LeaderModel.find({}, (err,doc) => {
         if(err) {console.error(err)};
-
+       
         doc.forEach(async (data) => {
-
-            data.booksReco = await readPage(data.storyLink);
-            console.log(data.booksReco);
-            //console.log(data.booksReco);
+            
+            data.booksReco = await readPage(data);
+            //console.log(data.storyLink, data.booksReco);
         })
     })
 
 
 }
 
-function readPage(URL){
-    request(URL, async function(err, response, body){
+function readPage(data){
+    return new Promise((resolve, reject)=>{
+    request(data.storyLink, async function(err, response, body){
             
         if (err) console.error(err);
 
@@ -47,31 +48,30 @@ function readPage(URL){
 
         const elements = $('#page tr');
 
-        elements.each(async (roll, data) => {
+        elements.each(async (roll, page) => {
             
             let bookdetail = {};
-            const bookImgPath = await $(data)  .find('.kniga')
+            const bookImgPath = await $(page)  .find('.kniga')
                                                     .children('a')
                                                     .children('img')
                                                     .attr('src');
             if(bookImgPath){
                 bookdetail.bookImgPath = bookImgPath;
 
-                const detail = $(data).find('.opisanie')
+                const detail = $(page).find('.opisanie')
                                                     
                 bookdetail.bookName = detail.children('a').text().split(/\sby\s/i);
                 bookdetail.bookAuthor = bookdetail.bookName[1];
-                bookdetail.bookName = bookdetail.bookName[0];
+                bookdetail.bookName = bookdetail.bookName[0].replace('"', '');
                 bookdetail.amazonLink = detail.children('a').attr('href');
-                bookdetail.leaderComment = detail.children('.quote2').text().replace(/^s+/,'');
+                
+                bookdetail.leaderComment = detail.children('.quote2').text().replace(/^s+/,'') || 
+                                           detail.children('.quote').text().replace(/^s+/,'');
 
-                if(!bookdetail.leaderComment){
-                    bookdetail.whereRecommended = detail.children('.recom').text();
-                } else {
-                    bookdetail.leaderCommentImg = detail.children('.quote2').find('img').attr('src');
-                    bookdetail.whereRecommended = detail.find('.pho').text();
+                bookdetail.textRecom = detail.children('.recom').text();
+                bookdetail.leaderCommentImg = detail.find('img').attr('src');
+                bookdetail.phoRecom = detail.find('.pho').text();
 
-                }
 
                 bookdetail.bookDesc = detail.children('.description').text();
 
@@ -80,12 +80,13 @@ function readPage(URL){
                 //console.log(booksReco);
             }
             if (roll == elements.length - 1) {
-                //console.log(booksReco);
-                return booksReco;
+                console.log(counter++, data.storyLink, booksReco);
+                resolve(booksReco);
             }
         });
         
     })
+})
 }
 
 async function start(){
