@@ -15,7 +15,7 @@ mongoose.connect(DB="mongodb+srv://krishna:krishna123@gladiator-kris-t7sjb.mongo
   let db = mongoose.connection;
   db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
-var counter = 1, counter2 = 1;
+var counter = 1, counter2 = 0;
 
 scrapeItems();
 
@@ -23,39 +23,80 @@ function scrapeItems(){
 
     const LeaderModel = require("./leader_model");
 
-    LeaderModel.find({}, (err,doc) => {
+    LeaderModel.find({},async (err,doc) => {
         if(err) {console.error(err)};
        
-        doc.forEach(async (data) => {
+       for(let i=0; i<doc.length-1; i++){
+            // let data={};
+            // data.storyLink = "http://favobooks.com/investors/59-jamie-dimon.html"
             
+            data= doc[i];
+            console.log('Timeout......1');
+            // await sleep(9000);
+            //await new Promise(resolve => setTimeout(resolve, 5000));
+            console.log('Timeout.....2');
+
             data.booksReco = await readPage(data);
+
+           
+                
+              
             //console.log(data.storyLink, data.booksReco);
-        })
+            //data.save();
+            
+        }
     })
 
 
 }
 
+function sleep(ms) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+  }   
+
 function readPage(data){
     return new Promise((resolve, reject)=>{
+
     request(data.storyLink, async function(err, response, body){
-            
         if (err) console.error(err);
 
-        //console.log(err, response, body);
+        // while(response.statusCode !== 200){
+        //     console.log(counter2, data.storyLink, response.toJSON());
+
+        //         request(data.storyLink, await function(err, response_new, body_new){
+        //             return new Promise((resolve, reject)=> {
+        //             if (err) reject(err);
+
+        //             response = response_new;
+        //             body = body_new;
+        //             console.log(counter2, data.storyLink, response.toJSON());
+        //             resolve(null);
+        //         });
+        //         })
+        //     }
+
+        //console.log(err, response, body,);
         let $ = cheerio.load(body);
         let booksReco = [];
 
-        const elements = $('#page tr');
+        const elements = $('#page>table>tbody>tr');
         counter2++;
-
-        elements.each(async (roll, page) => {
+        console.log(counter2, data.storyLink, elements, response.toJSON());
+        
+        
+            
+        
+        
+        elements.each((roll, page) => {
             
             let bookdetail = {};
-            const bookImgPath = await $(page)  .find('.kniga')
+            const bookImgPath = $(page)  .find('.kniga')
                                                     .children('a')
                                                     .children('img')
                                                     .attr('src');
+            //(console.log(counter2,data.storyLink, bookImgPath));
             if(bookImgPath){ //so that only the table with the books is read & not anyother table(tr)
                 bookdetail.bookImgPath = bookImgPath;
 
@@ -81,7 +122,7 @@ function readPage(data){
                 //console.log(booksReco);
             }
             if (roll == elements.length - 1) {
-                console.log(counter++, counter2, data.storyLink, booksReco);
+                 console.log(counter++, counter2, data.storyLink, booksReco);
                 resolve(booksReco);
             }
         });
