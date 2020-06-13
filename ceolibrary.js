@@ -21,15 +21,11 @@ function scrapeBooksList(homeURL){ //scrape the books page for listing
         }
 
         if(response.statusCode !== 200){
-
             console.error('response.statusCode, homeURL, response');
             reject(response.statusCode);
-        
         } else {
             let $ = cheerio.load(body);
-
             console.log(homeURL, response.statusCode);
-
             const elements = $('.fcl-entry')
 
             elements.each(async function(i,e) {
