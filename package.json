@@ -1,18 +1,11 @@
 {
   "name": "scraper",
   "version": "1.0.0",
-  "description": "Scraper for websites",
-  "main": "server.js",
-  "dependencies": {
-    "cheerio": "^1.0.0-rc.3",
-    "dotenv": "^8.2.0",
-    "mongoose": "^5.9.18",
-    "request": "^2.88.2"
-  },
-  "devDependencies": {},
+  "description": "scraper for websites",
+  "main": "ceolibrary.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node ceolibrary.js"
   },
   "repository": {
     "type": "git",
@@ -20,12 +13,20 @@
   },
   "keywords": [
     "scraper",
-    "cheerio"
+    "cheerio",
+    "node"
   ],
-  "author": "krishna",
+  "author": "Krishna",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/galdiatorocks/scraper/issues"
   },
-  "homepage": "https://github.com/galdiatorocks/scraper#readme"
+  "homepage": "https://github.com/galdiatorocks/scraper#readme",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.3",
+    "dotenv": "^8.2.0",
+    "mongodb": "^3.5.9",
+    "mongoose": "^5.9.19",
+    "request": "^2.88.2"
+  }
 }

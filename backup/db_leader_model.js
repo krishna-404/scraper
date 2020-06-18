@@ -11,7 +11,7 @@ const leaderSchema = new Schema({
   booksRecoId: [String],
 },{
   timestamps: true,
-  collection: 'leaders'
+  collection: 'dbleaders'
 });
 
-module.exports = mongoose.model("ceolibLeader", leaderSchema);
+module.exports = mongoose.model("dbceolibLeader", leaderSchema);

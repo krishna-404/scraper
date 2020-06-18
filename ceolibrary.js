@@ -1,64 +1,75 @@
 const request = require('request');
 const cheerio = require('cheerio');
+require('dotenv').config();
+const mongoose = require("mongoose");
+
+mongoose.connect(process.env.DB, {
+    useNewUrlParser: true,
+    useFindAndModify: false,
+    useCreateIndex: true,
+    useUnifiedTopology: true
+  });
+  mongoose.Promise = global.Promise;
+  let db = mongoose.connection;
+  db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
 const LeaderModel = require("./leader_model");
+const BookModel = require("./book_model");
 
 async function start(){
-    for(let i=1; i<=1; i+=1){ //loop through all the 132 pages of books listings
-        const pageDone = await scrapeBooksList('https://www.theceolibrary.com/books/page/' + i);
+    for(let i=31; i<=40; i+=1){ //loop through all the 132 pages of books listings
+        const pageDone = await scrapeBooksList('https://www.theceolibrary.com/books/page/' + i).catch(e => console.error(e));
         console.log('page number done:', i, pageDone)
     }
+    return null;
 }
 
 function scrapeBooksList(homeURL){ //scrape the books page for listing
-
     return new Promise((resolve, reject)=> {
+        request(homeURL, async function(err, response, body){
+            if (err) {
+                console.error('scrapeBooksList err: ', err);
+                reject(err);
+            }
 
-    request(homeURL, function(err, response, body){
-        if (err) {
-            console.error('scrapeBooksList err: ', err);
-            reject(err);
-        }
+            if(response.statusCode !== 200){
+                console.error('response.statusCode, homeURL, response');
+                reject(response.statusCode);
+            } else {
+                let $ = cheerio.load(body);
+                const elements = $('.fcl-entry')
 
-        if(response.statusCode !== 200){
-            console.error('response.statusCode, homeURL, response');
-            reject(response.statusCode);
-        } else {
-            let $ = cheerio.load(body);
-            console.log(homeURL, response.statusCode);
-            const elements = $('.fcl-entry')
-
-            elements.each(async function(i,e) {
-                    
-                    const card = $(e)
-                    let book = {};
+                for(let i=0; i<elements.length; i++) {
+                        const card = $(elements[i])
+                        let book = {};
+                                                
+                        book.bookStoryLink = card.find('a')
+                                            .attr('href');
+                        book.bookName = card.find('.book-title')
+                                            .text();
+                        book.bookImgPath = card .find('.book-cover')
+                                                .attr('data-bgset');
+                        book.bookAuthor = [];
+                        card.find('.book-info a').each((i,e) => {
+                            book.bookAuthor.push($(e).text());
+                        })
                                             
-                    book.bookLink = card.find('a')
-                                        .attr('href');
-                    book.bookName = card.find('.book-title')
-                                        .text();
-                    book.bookImgPath = card .find('.book-cover')
-                                            .attr('data-bgset');
-                    book.bookAuthor = card.find('.book-info')
-                                        .children('a')
-                                        .text();
 
-                    await scrapeBook(book);
-                    console.log('scrapebookdone: ', i);
+                        await scrapeBook(book).catch(e => console.error(e));
+                        console.log('scrapebookdone: ', i);
 
-                    if (i == elements.length - 1) {
-                        resolve(homeURL + ' scrapebooksList done');
-                    }
-            })
-        }
+                        if (i == elements.length - 1) {
+                            resolve(homeURL + ' scrapebooksList done');
+                        }
+                };
+            }
+        })
     })
-})
 }
 
 function scrapeBook(book){
     return new Promise((resolve, reject) => {
-    
-        request(book.bookLink, function(err, response, body){
+        request(book.bookStoryLink, function(err, response, body){
             if (err) {
                 console.error('scrapeBook err: ', err);
                 reject(err);
@@ -68,73 +79,124 @@ function scrapeBook(book){
                 reject(response.statusCode);
             } else {
                 let $ = cheerio.load(body);
-                console.log(book.bookLink, response.statusCode);
-                const elements =  $('.re-entry');
 
-                elements.each(async function(i,e){
+                book.bookTags=[];
+                $('.breadcrumb a').each(function(i,e){
+                    if(i != 0){
+                        book.bookTags.push($(e).text());
+                    }
+                });
 
-                    const card = $(e);
-                    let leader = {};
-                                        
-                    leader.leaderLink = "https://www.theceolibrary.com/" + card.find('a')
-                                        .attr('href');
-                    leader.leaderName = card.find('strong')
-                                        .text();
-                    leader.leaderSector = card  .find('p')
-                                                .text()
-                                                .replace(/^[" (]/,"")
-                                                .replace(/[)"]$/,"");
-                    book.quote = card.text();
-
-                    let reco = $('.sources-list>li');
-                    let recoCard = $(reco[i]);
-
-                    book.whereRecommended = recoCard.find('a')
-                                                    .attr('href')
-                                            
-                    leader = await scrapeLeader(leader).catch(e => console.error(e));
-                    console.log('scrapeLeader done: ', i, leader, book);
-
-                    leader.booksReco = [];
-                    leader.booksReco.push(book);
-
-                    if (i == elements.length - 1) {
-                        resolve(book.bookLink + ' scrapeBook done');
+                book.bookDesc = $('.amazon-book-description').contents();
+                $('.buy-book a').each((i,e) => {
+                    if(i==0){
+                        book.amazonLink = $(e).attr('href');
                     }
                 })
+                book.leadersReco = [];
+
+                BookModel.create(book, async (err, bookDoc) => { 
+                    if(err) {
+                        console.error(err);
+                        reject(err);
+                    };
+                    const elements =  $('.re-entry');
+
+                    // elements.each(async (count, dat) => { //reading the leaders in async
+
+                    for(let count=0; count<=elements.length-1; count++){
+
+                        // await new Promise(resolve => setTimeout(resolve, count*1000));
+                        //console.log(count,elements.length);
+                        const card = $(elements[count]);
+                        // const card = $(dat);
+
+                        let bookReco = {};
+                            
+                        bookReco.leaderComment = card.text();
+                        
+                        let reco = $('.sources-list>li');
+                        let recoCard = $(reco[count]);
+
+                        bookReco.whereRecommended = recoCard.find('a')
+                                                        .attr('href');
+                                                        
+
+                        let leader = {};
+                                            
+                        leader.leaderStoryLink = "https://www.theceolibrary.com" + card.find('a')
+                                            .attr('href').replace(/\<.*?\>/g,"");
+
+                        let leaderDoc = await LeaderModel.findOne({leaderStoryLink: leader.leaderStoryLink})
+                        let leaderDbId;
+                            
+                        if(!leaderDoc){
+
+                            leader.leaderName = card.find('strong')
+                                                .text();
+                            leader.leaderSector = card  .find('p')
+                                                        .text()
+                                                        .match(/\(.*?\)/);
+                            if(leader.leaderSector){
+                                leader.leaderSector = leader.leaderSector[0].replace("(", "")
+                                                            .replace(")", "");
+                            } else {
+                                console.log("leaderSector not available: ", leader);
+                            }
+                            leader.booksRecoId = [];
+                            leader.booksRecoId.push(bookDoc.id);
+                            
+                            console.log(count, elements.length, leader.leaderStoryLink, bookDoc.bookStoryLink)
+                            leader = await scrapeLeader(leader).catch(e => console.error(e));
+                            console.log('scrapeLeader done: ', count, leader.leaderName);
+
+                            leaderDoc = await LeaderModel.create(leader)
+                            console.log("leaderDoc: ", leaderDoc);
+                            bookReco.leaderDbId = leaderDoc.id;
+                            bookDoc.leadersReco.push(bookReco);
+                            await bookDoc.save();
+                            if (count == elements.length - 1) {
+                                resolve('leader done');
+                            }
+                            
+                        } else {
+
+                            leaderDoc.booksRecoId.push(bookDoc.id);
+                            await leaderDoc.save();
+
+                            console.log(leaderDoc.id);
+                            bookReco.leaderDbId = leaderDoc.id;
+                            bookDoc.leadersReco.push(bookReco);
+                            await bookDoc.save();
+                            if (count == elements.length - 1) {
+                                resolve('leader done');
+                            }
+                        }
+                    };
+                });
             }
         })
     })
 }
 
 function scrapeLeader(leader){
-new Promise((resolve, reject)=> {
-
-    console.log(leader.leaderLink);
-
-        request(leader.leaderLink, function(err, response, body){
+    return new Promise((resolve, reject)=> {
+        request(leader.leaderStoryLink, function(err, response, body){
             if (err) {
-                console.log('leaderLink err: ', err);
+                console.error('leaderLink err: ', err);
                 reject(err);
             }
             if(response.statusCode !== 200){
-                console.log('response.statusCode, leader.leaderLink, response');
+                console.error(response.statusCode, leader.leaderLink, response);
                 reject(response.statusCode);
             } else {
                 let $ = cheerio.load(body);
-
-                console.log(leader.leaderLink, response.statusCode);
                 const card =  $('.tag-description');
 
-                if(!card.find('img').attr('src')){
-                    resolve(leader);
-                }
-
-                leader.imagepath = card .find('img')
+                leader.leaderImgPath = card .find('img')
                                         .attr('src');
-                leader.leaderBio  = card;
+                leader.leaderBio  = card.find('p').contents();
                 
-                console.log(leader, response);
                 resolve(leader);
             }
         })
