@@ -11,8 +11,8 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}\\ceolibrary.js"
-            // "program": "${workspaceFolder}\\backup/dbbackup.js"
+            // "program": "${workspaceFolder}\\ceolibrary.js"
+            "program": "${workspaceFolder}\\backup/dbbackup.js"
             // "program": "${workspaceFolder}\\backup/dbrestore.js"
         }
     ]

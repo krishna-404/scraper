@@ -17,7 +17,7 @@ const LeaderModel = require("./leader_model");
 const BookModel = require("./book_model");
 
 async function start(){
-    for(let i=31; i<=40; i+=1){ //loop through all the 132 pages of books listings
+    for(let i=0; i<=132; i+=1){ //loop through all the 132 pages of books listings
         const pageDone = await scrapeBooksList('https://www.theceolibrary.com/books/page/' + i).catch(e => console.error(e));
         console.log('page number done:', i, pageDone)
     }
@@ -110,7 +110,7 @@ function scrapeBook(book){
                         //console.log(count,elements.length);
                         const card = $(elements[count]);
                         // const card = $(dat);
-
+                        
                         let bookReco = {};
                             
                         bookReco.leaderComment = card.text();
@@ -125,8 +125,8 @@ function scrapeBook(book){
                         let leader = {};
                                             
                         leader.leaderStoryLink = "https://www.theceolibrary.com" + card.find('a')
-                                            .attr('href').replace(/\<.*?\>/g,"");
-
+                                            .attr('href').replace(/\<.*?\>/g,"").replace(/\ă/g, "a");
+                        
                         let leaderDoc = await LeaderModel.findOne({leaderStoryLink: leader.leaderStoryLink})
                         let leaderDbId;
                             
@@ -149,7 +149,7 @@ function scrapeBook(book){
                             console.log(count, elements.length, leader.leaderStoryLink, bookDoc.bookStoryLink)
                             leader = await scrapeLeader(leader).catch(e => console.error(e));
                             console.log('scrapeLeader done: ', count, leader.leaderName);
-
+                            
                             leaderDoc = await LeaderModel.create(leader)
                             console.log("leaderDoc: ", leaderDoc);
                             bookReco.leaderDbId = leaderDoc.id;
@@ -183,10 +183,12 @@ function scrapeLeader(leader){
     return new Promise((resolve, reject)=> {
         request(leader.leaderStoryLink, function(err, response, body){
             if (err) {
+                resolve(leader);
                 console.error('leaderLink err: ', err);
-                reject(err);
+                resolve(leader);
             }
             if(response.statusCode !== 200){
+                resolve(leader);
                 console.error(response.statusCode, leader.leaderLink, response);
                 reject(response.statusCode);
             } else {
