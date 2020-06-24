@@ -14,16 +14,32 @@ mongoose.connect(process.env.DB, {
 
 const dbLeaderModel = require("./db_leader_model");
 const dbBookModel = require("./db_book_model");
-const LeaderModel = require("../leader_model");
-const BookModel = require("../book_model")
+const LeaderModel = require("../leaders_model");
+const BookModel = require("../books_model")
 
-start();
+// start();
+countUpdate();
 
 async function start(){
   let leaders = await dbLeaderModel.find().lean()
   for(let i=0; i<leaders.length; i++) {
       let dbLeader = leaders[i];
-      await LeaderModel.create(dbLeader);  
+
+      let data = {
+            _id: dbLeader._id,
+            leaderName: dbLeader.leaderName,
+            leaderSector:  dbLeader.leaderSector,
+            leaderBio: dbLeader.leaderBio,
+            leaderImgPath: dbLeader.leaderImgPath,
+            leaderStoryLink: dbLeader.leaderStoryLink,
+            booksReco: []
+          }
+      
+      for(let j=0; j<dbLeader.booksRecoId.length; j++){
+        data.booksReco.push({id : dbLeader.booksRecoId[j]});
+      }    
+
+      await LeaderModel.create(data);  
   }
   console.log('done');
 
@@ -37,6 +53,18 @@ async function start(){
   console.log('done');
   return null;
 };
+
+async function countUpdate(){
+  let leaders = await LeaderModel.find();
+  for (let j=0; j<leaders.length; j++){
+    // console.log(dbBook);
+    let dbLeader = leaders[j];
+    dbLeader.sortCount = dbLeader.booksReco.length;
+    await dbLeader.save();
+  };
+  console.log('done');
+}
+
 
 
 /*

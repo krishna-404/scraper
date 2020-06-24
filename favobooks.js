@@ -13,7 +13,7 @@ async function start(){
 
 function scrapeHome(){
 
-    const LeaderModel = require("./leader_model");
+    const LeaderModel = require("./leaders_model");
 
     request(homeURL, function(err, response, body){
         if (err) console.error(err);

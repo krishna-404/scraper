@@ -13,8 +13,8 @@ mongoose.connect(process.env.DB, {
   let db = mongoose.connection;
   db.on("error", console.error.bind(console, "MongoDB connection error:"));
 
-const LeaderModel = require("./leader_model");
-const BookModel = require("./book_model");
+const LeaderModel = require("./leaders_model");
+const BookModel = require("./books_model");
 
 async function start(){
     for(let i=0; i<=132; i+=1){ //loop through all the 132 pages of books listings
