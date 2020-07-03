@@ -11,6 +11,7 @@ const bookSchema = new Schema({
   bookTags: [String],
   bookImgPath: { type: String, trim: true },
   amazonLink: { type: String, trim: true },
+  bookRBLink: {type: String, trim: true},
   bookStoryLink: {type: String, trim: true},
   clickBy: [String],
   recoCount: {type: Number},
@@ -22,7 +23,9 @@ const bookSchema = new Schema({
       whenRecommended: { type: Date },
       leaderComment: {type: String, trim: true}
     }
-  ]
+  ],
+  createdBy: {type: String, trim: true},
+  updatedBy: {type: String, trim: true}
 },{
   timestamps: true,
   collection: 'books'

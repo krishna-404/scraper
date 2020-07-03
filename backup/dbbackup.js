@@ -14,8 +14,8 @@ mongoose.connect(process.env.DB, {
 
 const dbLeaderModel = require("./db_leader_model");
 const dbBookModel = require("./db_book_model");
-const LeaderModel = require("../leader_model");
-const BookModel = require("../book_model")
+const LeaderModel = require("../leaders_model");
+const BookModel = require("../books_model")
 
 start();
 
